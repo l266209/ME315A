@@ -1,0 +1,130 @@
+---
+title: "Lab02 ME315A"
+author: "Leonardo Mikhael - 266209"
+format: pdf
+editor: visual
+---
+
+```{r}
+#Questão 1
+
+#Número total de voos e número de voos com mais de 10 minutos de atraso na chegada são suficientes para calcular o percentual de voos com mais de 10 minutos de atraso na chegada
+```
+
+```{r}
+#Questão 2
+
+#e
+getStats <- function(input, pos) {
+  
+  #a  
+  input %>%
+    filter(AIRLINE %in% c("AA", "DL", "UA", "US")) %>%
+    
+    #b
+    filter(!is.na(DAY),
+           !is.na(MONTH),
+           !is.na(AIRLINE),
+           !is.na(ARRIVAL_DELAY)) %>%
+    #c
+    group_by(MONTH, DAY, AIRLINE) %>%
+    
+    #d
+    summarise(
+      total = n(),
+      atrasados = sum(ARRIVAL_DELAY > 10),
+      .groups = "drop"
+    )
+}
+```
+
+```{r}
+#Questão 3
+install.packages("readr")
+install.packages("dplyr")
+library(readr)
+library(dplyr)
+
+resultado <- read_csv_chunked(
+  "flights.csv",
+  
+  #b
+  callback = DataFrameCallback$new(getStats),
+  
+  #a
+  chunk_size = 100000,
+  
+  #c
+  col_types = cols_only(
+    AIRLINE = col_character(),
+    DAY = col_integer(),
+    MONTH = col_integer(),
+    ARRIVAL_DELAY = col_double()
+  )
+)
+```
+
+```{r}
+#Questão 4
+computeStats <- function(input, pos) {
+  
+  input %>%
+    
+    #a
+    group_by(DAY, MONTH, AIRLINE) %>%
+    summarise(
+      total = sum(total),
+      atrasados = sum(atrasados),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      
+      #b
+      Cia = AIRLINE,
+      Data = as.Date(
+        paste(2015, MONTH, DAY, sep = "-")
+      ),
+      Perc = atrasados / total
+    ) %>%
+    select(Cia, Data, Perc)
+}
+```
+
+```{r}
+#Questão 5
+
+#a
+install.packages("remotes")
+remotes::install_github("jayjacobs/ggcal")
+
+library(ggcal)
+library(ggplot2)
+
+#b
+pal <- scale_fill_gradient(
+  low = "#4575b4",
+  high = "#d73027"
+)
+
+#c
+baseCalendario <- function(stats, cia) {
+  
+  dados <- stats %>%
+    filter(Cia == cia)
+  
+  ggcal(dados$Data, dados$Perc)
+}
+
+#d
+stats <- computeStats(resultado, 1)
+cAA <- baseCalendario(stats, "AA")
+cDL <- baseCalendario(stats, "DL")
+cUA <- baseCalendario(stats, "UA")
+cUS <- baseCalendario(stats, "US")
+
+#e
+cAA + pal + ggtitle("Percentual de atrasos - AA")
+cDL + pal + ggtitle("Percentual de atrasos - DL")
+cUA + pal + ggtitle("Percentual de atrasos - UA")
+cUS + pal + ggtitle("Percentual de atrasos - US")
+```
