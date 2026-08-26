@@ -1,0 +1,233 @@
+---
+title: "ME115 - Linguagem R"
+subtitle: "Atividade Prática 03 - Resolução"
+output:
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Utilize este documento para inserir os códigos em `R` e as respostas da **Atividade Prática 03**.
+	
+## Exercício 1
+
+```{r}
+# ---- Exercício 1 ----
+library(dslabs)
+data(murders)
+nome_novo <- function(state, abb){
+  ifelse(nchar(state) > 8, abb, state)
+}
+#retorna abb se true e state se false
+```
+
+
+## Exercício 2
+
+```{r}
+# ---- Exercício 2 ----
+soma_n <- function(n){
+  elementos <- n:1
+  return(sum(elementos))
+}
+soma_n(5000)
+```
+
+
+## Exercício 3
+
+```{r}
+# ---- Exercício 3 ----
+calcule_sn <- function(n){
+  elementos <- (n:1)^2
+return(sum(elementos))
+}
+calcule_sn(10)
+```
+
+
+## Exercício 4
+
+```{r}
+# ---- Exercício 4 ----
+s_n <- vector("numeric", 25)
+s_n
+for (i in 1:25){
+  s_n[i] <- calcule_sn(i)
+}
+s_n
+```
+
+
+## Exercício 5
+
+```{r}
+# ---- Exercício 5 ----
+all.equal(calcule_sn(n), n*(n + 1)*(2*n + 1)/6)
+#identical precisa de um valor específico
+```
+
+
+## Exercício 6
+
+```{r}
+# ---- Exercício 6 ----
+dados_rolando <- function(n){
+  sum(sample(1:6, n, TRUE))
+}
+```
+
+
+## Exercício 7
+
+```{r}
+# ---- Exercício 7 ----
+f_to_k <- function(tempF){
+  tempK <- 5*(tempF - 32)/9 + 273
+  return(tempK)
+}
+f_to_k(32)
+f_to_k(212)
+#nao esquecer de usar os operadores, mult *
+```
+
+
+## Exercício 8
+
+```{r}
+# ---- Exercício 8 ----
+stats <- function(x){
+  media <- sum(x)/length(x)
+  vari <- sum((x - media)^2/(length(x) - 1))
+  dp <- sqrt(vari)
+  return(c(media = media, variancia = vari, desvio.padrao = dp))
+}
+mean(x)
+var(x)
+sd(x)
+```
+
+
+## Exercício 9
+
+```{r}
+# ---- Exercício 9 ----
+random <- function(){
+  number <- as.integer(runif(1, 0, 101))
+  return(number)
+}
+#0 e 101, pois se fosse 0 e 100 teria valores no intervalo [0, 100)
+```
+
+
+## Exercício 10
+
+```{r}
+# ---- Exercício 10 ----
+multiplos3 <- function(n){
+  array(3 * (1:n))
+}
+multiplos3(20)
+#sem especificar, vai que nem vetor
+```
+
+
+## Exercício 11
+
+```{r}
+# ---- Exercício 11 ----
+minmax <- function(x){
+  x <- x[!is.na(x)]  # remove NA
+  minimo <- x[1]
+  maximo <- x[1]
+  for (i in x){
+    if (i < minimo){
+      minimo <- i
+    }
+    if (i > maximo){
+      maximo <- i
+    }
+  }
+  amp <- maximo - minimo
+  return(list(max = maximo, min = minimo, range = amp))
+}
+```
+
+
+## Exercício 12
+
+```{r}
+# ---- Exercício 12 ----
+padroniza_z <- function(x){
+  (x - mean(x))/sd(x)
+}
+as.numeric(scale(x))
+#se pedir manualmente, media <- sum(x)/length(x) e desvio <- sqrt(sum((x - media)^2)/(length(x)-1))
+```
+
+
+## Exercício 13
+
+```{r}
+# ---- Exercício 13 ----
+# Insira aqui o código da sua solução
+```
+
+
+## Exercício 14
+
+```{r}
+# ---- Exercício 14 ----
+# Insira aqui o código da sua solução
+```
+
+
+## Exercício 15
+
+```{r}
+# ---- Exercício 15 ----
+# Insira aqui o código da sua solução
+```
+
+
+## Exercício 16
+
+```{r}
+# ---- Exercício 16 ----
+# Insira aqui o código da sua solução
+```
+
+
+## Exercício 17
+
+```{r}
+# ---- Exercício 17 ----
+# Insira aqui o código da sua solução
+```
+
+
+## Exercício 18
+
+```{r}
+# ---- Exercício 18 ----
+# Insira aqui o código da sua solução
+```
+
+
+## Exercício 19
+
+```{r}
+# ---- Exercício 19 ----
+# Insira aqui o código da sua solução
+```
+
+
+## Exercício 20
+
+```{r}
+# ---- Exercício 20 ----
+# Insira aqui o código da sua solução
+```
