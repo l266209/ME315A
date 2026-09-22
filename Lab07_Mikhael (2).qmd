@@ -1,0 +1,240 @@
+---
+title: "Lab07_Mikhael"
+author: "Leonardo Mikhael - 266209"
+format: pdf
+editor: visual
+---
+
+## SQLite - Parte II
+
+1.  Baixe o arquivo uwmadison.sqlite3. Conecte-se a ele usando o pacote RSQLite, armazenando a conexão em uma variável conn.
+
+```{r}
+library(RSQLite)
+conn <- dbConnect(SQLite(), "database.sqlite3")
+```
+
+2.  Quem são e quantos são os professores que lecionaram disciplinas cujo tópico era estatística (subjects.abbreviation='STAT');
+
+```{r}
+dbGetQuery(conn, "
+  SELECT COUNT(DISTINCT instructors.id) AS PROFESSORES
+  FROM subjects
+  INNER JOIN subject_memberships
+    ON subjects.code = subject_memberships.subject_code
+  INNER JOIN course_offerings
+    ON subject_memberships.course_offering_uuid = course_offerings.uuid
+  INNER JOIN sections
+    ON course_offerings.uuid = sections.course_offering_uuid
+  INNER JOIN teachings
+    ON sections.uuid = teachings.section_uuid
+  INNER JOIN instructors
+    ON teachings.instructor_id = instructors.id
+  WHERE subjects.abbreviation = 'STAT'
+")
+```
+
+3.  O GPA americano é definido numa escala de 0 a 4, em que A = 4, AB = 3.5, B = 3, BC = 2.5, C = 2, D = 1 e F = 0. Determinando a nota média de cada oferecimento pela ponderação da quantidade de alunos em cada extrato com os valores numéricos de cada conceito, indique (no que se referente a disciplinas no assunto de estatística):
+
+- Quem é o professor mais difícil?
+- Quem é o professor mais fácil?
+- Qual é a disciplina mais difícil?
+- Qual é a disciplina mais fácil?
+
+```{r}
+gpa_stat <- dbGetQuery(conn, "
+
+WITH gpa AS (
+  SELECT
+    course_offering_uuid,
+    section_number,
+    (
+      4.0 * a_count +
+      3.5 * ab_count +
+      3.0 * b_count +
+      2.5 * bc_count +
+      2.0 * c_count +
+      1.0 * d_count +
+      0.0 * f_count
+    ) /
+    (
+      a_count +
+      ab_count +
+      b_count +
+      bc_count +
+      c_count +
+      d_count +
+      f_count
+    ) AS gpa
+  FROM grade_distributions
+)
+
+SELECT
+  subjects.abbreviation,
+  courses.number,
+  courses.name AS disciplina,
+  instructors.name AS professor,
+  gpa.gpa
+FROM subjects
+INNER JOIN subject_memberships
+  ON subjects.code = subject_memberships.subject_code
+INNER JOIN course_offerings
+  ON subject_memberships.course_offering_uuid =
+     course_offerings.uuid
+INNER JOIN courses
+  ON course_offerings.course_uuid = courses.uuid
+INNER JOIN sections
+  ON course_offerings.uuid = sections.course_offering_uuid
+INNER JOIN teachings
+  ON sections.uuid = teachings.section_uuid
+INNER JOIN instructors
+  ON teachings.instructor_id = instructors.id
+INNER JOIN gpa
+  ON sections.course_offering_uuid = gpa.course_offering_uuid
+  AND sections.number = gpa.section_number
+WHERE subjects.abbreviation = 'STAT'
+")
+
+professores_stat <- dbGetQuery(conn, "
+WITH gpa AS (
+  SELECT
+    course_offering_uuid,
+    section_number,
+    (
+      4.0 * a_count +
+      3.5 * ab_count +
+      3.0 * b_count +
+      2.5 * bc_count +
+      2.0 * c_count +
+      1.0 * d_count +
+      0.0 * f_count
+    ) /
+    (
+      a_count +
+      ab_count +
+      b_count +
+      bc_count +
+      c_count +
+      d_count +
+      f_count
+    ) AS gpa
+  FROM grade_distributions
+  WHERE
+    a_count + ab_count + b_count + bc_count +
+    c_count + d_count + f_count > 0
+),
+dados_stat AS (
+  SELECT
+    instructors.id AS professor_id,
+    instructors.name AS professor,
+    courses.number,
+    courses.name AS disciplina,
+    gpa.gpa
+  FROM subjects
+  INNER JOIN subject_memberships
+    ON subjects.code = subject_memberships.subject_code
+  INNER JOIN course_offerings
+    ON subject_memberships.course_offering_uuid =
+       course_offerings.uuid
+  INNER JOIN courses
+    ON course_offerings.course_uuid = courses.uuid
+  INNER JOIN sections
+    ON course_offerings.uuid = sections.course_offering_uuid
+  INNER JOIN teachings
+    ON sections.uuid = teachings.section_uuid
+  INNER JOIN instructors
+    ON teachings.instructor_id = instructors.id
+  INNER JOIN gpa
+    ON sections.course_offering_uuid = gpa.course_offering_uuid
+    AND sections.number = gpa.section_number
+  WHERE subjects.abbreviation = 'STAT'
+)
+SELECT
+  professor,
+  AVG(gpa) AS gpa_medio
+FROM dados_stat
+GROUP BY professor_id, professor
+ORDER BY gpa_medio
+")
+
+#prof menor gpa
+professores_stat[1, ]
+
+#prof maior gpa
+professores_stat[nrow(professores_stat), ]
+
+disciplinas_stat <- dbGetQuery(conn, "
+WITH gpa AS (
+  SELECT
+    course_offering_uuid,
+    section_number,
+    (
+      4.0 * a_count +
+      3.5 * ab_count +
+      3.0 * b_count +
+      2.5 * bc_count +
+      2.0 * c_count +
+      1.0 * d_count +
+      0.0 * f_count
+    ) /
+    (
+      a_count +
+      ab_count +
+      b_count +
+      bc_count +
+      c_count +
+      d_count +
+      f_count
+    ) AS gpa
+  FROM grade_distributions
+  WHERE
+    a_count + ab_count + b_count + bc_count +
+    c_count + d_count + f_count > 0
+),
+dados_stat AS (
+  SELECT
+    courses.number,
+    courses.name AS disciplina,
+    gpa.gpa
+  FROM subjects
+  INNER JOIN subject_memberships
+    ON subjects.code = subject_memberships.subject_code
+  INNER JOIN course_offerings
+    ON subject_memberships.course_offering_uuid =
+       course_offerings.uuid
+  INNER JOIN courses
+    ON course_offerings.course_uuid = courses.uuid
+  INNER JOIN sections
+    ON course_offerings.uuid = sections.course_offering_uuid
+  INNER JOIN gpa
+    ON sections.course_offering_uuid = gpa.course_offering_uuid
+    AND sections.number = gpa.section_number
+  WHERE subjects.abbreviation = 'STAT'
+)
+SELECT
+  number,
+  disciplina,
+  AVG(gpa) AS gpa_medio
+FROM dados_stat
+GROUP BY number, disciplina
+ORDER BY gpa_medio
+")
+
+#disciplina menor gpa
+disciplinas_stat[1, ]
+
+#disciplina maior gpa
+disciplinas_stat[nrow(disciplinas_stat), ]
+```
+
+4.  Desconecte do banco de dados.
+
+```{r}
+dbDisconnect(conn)
+```
+
+```{r}
+Sys.setenv(TZ = "America/Sao_Paulo")
+Sys.time()
+```
+
