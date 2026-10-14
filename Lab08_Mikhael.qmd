@@ -1,0 +1,135 @@
+---
+title: "Lab08_Mikhael"
+author: "Leonardo Mikhael"
+format: pdf
+editor: visual
+---
+
+```{r}
+library(Replicate)
+```
+
+```{python}
+import polars as pl
+
+basics = pl.scan_csv(
+    "title.basics0.tsv.gz",
+    separator="\t",
+    null_values="\\N",
+    infer_schema_length=10000
+)
+
+ratings = pl.scan_csv(
+    "title.ratings.tsv.gz",
+    separator="\t",
+    null_values="\\N"
+).with_columns(
+    pl.col("averageRating").cast(pl.Float64),
+    pl.col("numVotes").cast(pl.Int64)
+)
+
+principals = pl.scan_csv(
+    "title.principals0.tsv.gz",
+    separator="\t",
+    null_values="\\N"
+)
+```
+
+1.  Quais são os 5 filmes com as maiores notas (averageRating)? Apresente uma solução capaz de desempatar os filmes baseando-se no número de votos recebidos.
+
+```{python}
+filmes_avaliados = basics.join(
+    ratings,
+    on="tconst",
+    how="inner"
+)
+
+top5 = (
+    filmes_avaliados
+    .filter(pl.col("titleType") == "movie")
+    .sort(
+        ["averageRating", "numVotes"],
+        descending=[True, True]
+    )
+    .select(
+        "primaryTitle",
+        "startYear",
+        "averageRating",
+        "numVotes"
+    )
+    .head(5)
+)
+
+print(top5.collect(engine="streaming"))
+```
+
+2.  Qual é o gênero mais frequente entre os filmes com nota maior que 8?
+
+```{python}
+generos_frequentes = (
+    basics
+    .join(ratings, on="tconst", how="inner")
+    .filter(
+        (pl.col("titleType") == "movie") &
+        (pl.col("averageRating") > 8)
+    )
+    .select("genres")
+    .filter(pl.col("genres").is_not_null())
+    .with_columns(
+        pl.col("genres").str.split(",")
+    )
+    .explode("genres")
+    .filter(
+        (pl.col("genres") != "") &
+        (pl.col("genres") != "\\N")
+    )
+    .group_by("genres")
+    .agg(
+        pl.len().alias("frequencia")
+    )
+    .sort(
+        ["frequencia", "genres"],
+        descending=[True, False]
+    )
+    .head(1)
+)
+
+print(generos_frequentes.collect(engine="streaming"))
+```
+
+3.  Quais são os 3 atores/atrizes que mais participaram de filmes com nota maior que 7.5?
+
+```{python}
+top3atoresfilm = (
+    principals
+    .filter(
+        pl.col("category").is_in(["actor", "actress"])
+    )
+    .join(
+        basics.filter(pl.col("titleType") == "movie"),
+        on="tconst",
+        how="inner"
+    )
+    .join(
+        ratings,
+        on="tconst",
+        how="inner"
+    )
+    .filter(pl.col("averageRating") > 7.5)
+    .select("tconst", "nconst")
+    .unique(subset=["tconst", "nconst"])
+    .group_by("nconst")
+    .agg(pl.len().alias("nfilmes"))
+    .sort("nfilmes", descending=True)
+    .head(3)
+)
+
+print(top3atoresfilm.collect(engine="streaming"))
+```
+
+```{r}
+Sys.setenv(TZ = "America/Sao_Paulo")
+Sys.time()
+```
+
+
